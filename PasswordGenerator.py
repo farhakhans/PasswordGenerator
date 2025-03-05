@@ -1,93 +1,76 @@
-import tkinter as tk
-from tkinter import messagebox
-import random
-import string
-import time
+import streamlit as st
+import re
 
-def generate_password():
-    try:
-        length = int(length_entry.get())
-    except ValueError:
-        messagebox.showerror("Invalid Input", "Please enter a valid integer for password length.")
-        return
-    
-    char_pool = ""
-    if lowercase_var.get():
-        char_pool += string.ascii_lowercase
-    if uppercase_var.get():
-        char_pool += string.ascii_uppercase
-    if digits_var.get():
-        char_pool += string.digits
-    if special_var.get():
-        char_pool += string.punctuation
-    
-    if not char_pool:
-        messagebox.showerror("Invalid Criteria", "Please select at least one character type!")
-        return
-    
-    password = "".join(random.choice(char_pool) for _ in range(length))
-    password_label.config(text=password)
+# Function to check password strength
+def check_password_strength(password):
+    strength = 0
+    remarks = "Weak"
+    color = "red"
+    errors = []
 
-def animate_name(index=0):
-    colors = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"]
-    name_label.config(fg=colors[index % len(colors)])
-    root.after(500, animate_name, index + 1)
+    # Length Check
+    if len(password) >= 8:
+        strength += 1
+    else:
+        errors.append("⚠ Password must be at least 8 characters long.")
 
-root = tk.Tk()
-root.title("Password Generator")
-root.geometry("500x400")
-root.configure(bg="#2c3e50")
+    # Uppercase Check
+    if re.search(r"[A-Z]", password):
+        strength += 1
+    else:
+        errors.append("⚠ Password must include at least one uppercase letter (A-Z).")
 
-# Top frame for name and created by text (left aligned)
-top_frame = tk.Frame(root, bg="#2c3e50")
-top_frame.pack(pady=10, anchor="w")
+    # Lowercase Check
+    if re.search(r"[a-z]", password):
+        strength += 1
+    else:
+        errors.append("⚠ Password must include at least one lowercase letter (a-z).")
 
-name_label = tk.Label(top_frame, text="Farhana Ahsan", font=("Arial", 16, "bold"), bg="#2c3e50", fg="white")
-name_label.pack(side="left", padx=10)
+    # Number Check
+    if re.search(r"\d", password):
+        strength += 1
+    else:
+        errors.append("⚠ Password must include at least one number (0-9).")
 
-created_label = tk.Label(top_frame, text=" - Created by", font=("Arial", 12, "italic"), bg="#2c3e50", fg="white")
-created_label.pack(side="left")
+    # Special Character Check
+    if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        strength += 1
+    else:
+        errors.append("⚠ Password must include at least one special character (!@#$%^&*).")
 
-# Title for Password Generator
-title_label = tk.Label(root, text="Strong Random Password Generator", font=("Arial", 16, "bold"), bg="#2c3e50", fg="#f1c40f")
-title_label.pack(pady=10)
+    # Determine Strength Level
+    if strength == 1 or strength == 2:
+        remarks = "Weak"
+        color = "red"
+    elif strength == 3:
+        remarks = "Medium"
+        color = "orange"
+    elif strength >= 4:
+        remarks = "Strong"
+        color = "green"
 
-# Frame for criteria inputs
-criteria_frame = tk.Frame(root, bg="#2c3e50")
-criteria_frame.pack(pady=10)
+    return remarks, color, errors
 
-# Password length input
-length_label = tk.Label(criteria_frame, text="Password Length:", font=("Arial", 12), bg="#2c3e50", fg="white")
-length_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-length_entry = tk.Entry(criteria_frame, font=("Arial", 12), width=5)
-length_entry.grid(row=0, column=1, padx=5, pady=5)
-length_entry.insert(0, "12")  # Default length
+# Streamlit UI
+st.set_page_config(page_title="🔐 Password Generator", page_icon="🔒", layout="centered")
 
-# Checkboxes for criteria
-lowercase_var = tk.BooleanVar(value=True)
-uppercase_var = tk.BooleanVar(value=True)
-digits_var = tk.BooleanVar(value=True)
-special_var = tk.BooleanVar(value=True)
+st.markdown("<h1 style='text-align: center; color: #f1c40f;'>🔐 Password Generator</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; color: #2ecc71;'>Created by Farhana Ahsan</h3>", unsafe_allow_html=True)
 
-lowercase_check = tk.Checkbutton(criteria_frame, text="Include Lowercase", variable=lowercase_var, font=("Arial", 12), bg="#2c3e50", fg="white", selectcolor="#2c3e50")
-lowercase_check.grid(row=1, column=0, sticky="w", padx=5, pady=5)
+# User Input
+password = st.text_input("Enter your password", type="password")
+confirm_password = st.text_input("Confirm your password", type="password")
 
-uppercase_check = tk.Checkbutton(criteria_frame, text="Include Uppercase", variable=uppercase_var, font=("Arial", 12), bg="#2c3e50", fg="white", selectcolor="#2c3e50")
-uppercase_check.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+if password and confirm_password:
+    if password == confirm_password:
+        strength, color, errors = check_password_strength(password)
 
-digits_check = tk.Checkbutton(criteria_frame, text="Include Digits", variable=digits_var, font=("Arial", 12), bg="#2c3e50", fg="white", selectcolor="#2c3e50")
-digits_check.grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        # Show Strength Result
+        st.markdown(f"<h2 style='text-align: center; color: {color};'> Password Strength: {strength} </h2>", unsafe_allow_html=True)
 
-special_check = tk.Checkbutton(criteria_frame, text="Include Special Characters", variable=special_var, font=("Arial", 12), bg="#2c3e50", fg="white", selectcolor="#2c3e50")
-special_check.grid(row=2, column=1, sticky="w", padx=5, pady=5)
-
-# Generate Password button
-generate_button = tk.Button(root, text="Generate Password", font=("Arial", 14, "bold"), bg="#e67e22", fg="white", command=generate_password)
-generate_button.pack(pady=10)
-
-# Label to display the generated password
-password_label = tk.Label(root, text="", font=("Arial", 14, "bold"), bg="#2c3e50", fg="#2ecc71")
-password_label.pack(pady=10)
-
-animate_name()  # Start animated name
-root.mainloop()
+        # Show Errors If Password is Weak
+        if errors:
+            for error in errors:
+                st.error(error)
+    else:
+        st.error("❌ Passwords do not match! Please enter the same password in both fields.")
